@@ -20,6 +20,8 @@
 import math
 import logging
 import json
+import pandas as pd
+import mmap
 
 import numpy as np
 import obspy
@@ -253,6 +255,61 @@ class Sensor3c():
         """
         dictionary = json.loads(json_str)
         return cls.from_dict(dictionary)
+
+    @classmethod
+    def from_saf(cls, fname):
+        """Create `Sensor3c` object from a SAF ASCII file.
+
+        Parameters
+        ---------
+        fname : str
+            Name of the SESAME ASCII (SAF) file.
+
+        Returns
+        -------
+        Sensor3c
+            Instantiated `Sensor3c` object.
+
+        """
+
+        meta = {}
+        meta["File Name"] = fname
+
+        with open(fname) as fsaf:
+            # Look for some parameters in the header and
+            # for the line where data start.
+            for num, line in enumerate(fsaf, 1):
+                spl = line.split()
+                if "####----" in line:
+                    # Data should start from here
+                    data_start = num
+                    break
+                if spl:
+                    # List is not empty
+                    if spl[0] == "SAMP_FREQ":
+                        # Collect the sampling frequency
+                        samp_freq = float(spl[2])
+                        
+        # Read the dataset unsing pandas 
+        data = pd.read_csv(fname, sep=r"\s+", skiprows=data_start, header=None, float_precision="round_trip")
+        data.rename(columns={0: "vt",1: "ns", 2:"ew"}, inplace=True)
+
+        trace_ew = obspy.Trace()
+        trace_ew.data = data["ew"].to_numpy()
+        trace_ew.stats.sampling_rate = samp_freq        
+        ew = TimeSeries.from_trace(trace_ew)
+        
+        trace_ns = obspy.Trace()
+        trace_ns.data = data["ns"].to_numpy()
+        trace_ns.stats.sampling_rate = samp_freq
+        ns = TimeSeries.from_trace(trace_ns)
+        
+        trace_vt = obspy.Trace()
+        trace_vt.data = data["vt"].to_numpy()
+        trace_vt.stats.sampling_rate = samp_freq
+        vt = TimeSeries.from_trace(trace_vt)        
+        
+        return cls(ns, ew, vt, meta)    
 
     def split(self, windowlength):
         """Split component `TimeSeries` into `WindowedTimeSeries`.

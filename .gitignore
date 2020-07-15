@@ -15,3 +15,10 @@ scratch
 env
 test/.coverage
 test/htmlcov
+
+# Examples output
+examples/example_hvsr_figure_az.png
+examples/example_hvsr_spatial.png
+examples/example_output_geopsy.hv
+examples/example_output_hvsrpy.hv
+examples/example_output_hvsrpy_az.hv
