@@ -288,7 +288,33 @@ class Sensor3c():
                     # List is not empty
                     if spl[0] == "SAMP_FREQ":
                         # Collect the sampling frequency
+                        # CHECK HERE IF THE SAMPLING FREQUENCY IS OK!
                         samp_freq = float(spl[2])
+                    elif spl[0] == "PROJECT_NAME":
+                        try:
+                            # Collect the name of the project
+                            project_name = spl[2]
+                        except IndexError:
+                            # No name provided for the project
+                            project_name = None
+                        meta["project_name"] = project_name
+                    elif spl[0] == "START_TIME":
+                        starttime = obspy.UTCDateTime(int(spl[2]),
+                                                      int(spl[3]),
+                                                      int(spl[4]),
+                                                      int(spl[5]),
+                                                      int(spl[6]),
+                                                      int(spl[7]))
+                        meta["starttime"] = spl[2]+"/"+spl[3]+"/"+spl[4]+" "+spl[5]+":"+spl[6]+":"+spl[7]
+                    elif spl[0] == "EVT_X":
+                        meta["evt_x"] = spl[2]
+                    elif spl[0] == "EVT_Y":
+                        meta["evt_y"] = spl[2]
+                    elif spl[0] == "EVT_Z":
+                        meta["evt_z"] = spl[2]
+                        
+                                                      
+
                         
         # Read the dataset unsing pandas 
         data = pd.read_csv(fname, sep=r"\s+", skiprows=data_start, header=None, float_precision="round_trip")
@@ -296,18 +322,24 @@ class Sensor3c():
 
         trace_ew = obspy.Trace()
         trace_ew.data = data["ew"].to_numpy()
-        trace_ew.stats.sampling_rate = samp_freq        
+        trace_ew.stats.sampling_rate = samp_freq
+        trace_ew.stats.starttime = starttime        
+        
         ew = TimeSeries.from_trace(trace_ew)
         
         trace_ns = obspy.Trace()
         trace_ns.data = data["ns"].to_numpy()
         trace_ns.stats.sampling_rate = samp_freq
+        trace_ns.stats.starttime = starttime                
         ns = TimeSeries.from_trace(trace_ns)
         
         trace_vt = obspy.Trace()
         trace_vt.data = data["vt"].to_numpy()
         trace_vt.stats.sampling_rate = samp_freq
-        vt = TimeSeries.from_trace(trace_vt)        
+        trace_vt.stats.starttime = starttime                        
+        vt = TimeSeries.from_trace(trace_vt)
+
+
         
         return cls(ns, ew, vt, meta)    
 
