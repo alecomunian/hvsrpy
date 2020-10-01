@@ -4,8 +4,11 @@
 
 ## In-Progress for Next Release
 
+- Automatic consideration for multiple peaks.
+
 ## Under Consideration for a Future Release
 
-- Automatic checking of the SESAME clarity criteria (AT).
-
 ## Unassigned
+
+- LTA, STA time domain rejection.
+- Maximum amplitude rejection.
