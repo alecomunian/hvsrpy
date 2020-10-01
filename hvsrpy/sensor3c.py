@@ -33,6 +33,15 @@ logger = logging.getLogger(__name__)
 
 __all__ = ["Sensor3c"]
 
+#
+# Some default values for the parameters defined in the SAF file format
+#
+# Separator character between keywords
+SAF_SEP = "="
+EVT_X = 0.0
+EVT_Y = 0.0
+EVT_Z = 0.0
+PROJECT_NAME = "None"
 
 class Sensor3c():
     """Class for creating and manipulating 3-component sensor objects.
@@ -274,44 +283,56 @@ class Sensor3c():
 
         meta = {}
         meta["File Name"] = fname
+        # This is the default value if a project name is not provided.
+        meta["project_name"] = PROJECT_NAME
+        meta["evt_x"] = EVT_X
+        meta["evt_y"] = EVT_Y
+        meta["evt_z"] = EVT_Z        
 
         with open(fname) as fsaf:
             # Look for some parameters in the header and
             # for the line where data start.
             for num, line in enumerate(fsaf, 1):
-                spl = line.split()
+                spl = line.split(sep=SAF_SEP)
+                # Remove all white spaces
+                spl = [s.replace(" ", "") for s in spl]
                 if "####----" in line:
                     # Data should start from here
                     data_start = num
                     break
                 if spl:
                     # List is not empty
+#                    print(spl)
                     if spl[0] == "SAMP_FREQ":
                         # Collect the sampling frequency
                         # CHECK HERE IF THE SAMPLING FREQUENCY IS OK!
-                        samp_freq = float(spl[2])
+                        samp_freq = float(spl[1])
                     elif spl[0] == "PROJECT_NAME":
                         try:
                             # Collect the name of the project
-                            project_name = spl[2]
+                            project_name = spl[1]
                         except IndexError:
                             # No name provided for the project
-                            project_name = None
+                            project_name = "None"
                         meta["project_name"] = project_name
                     elif spl[0] == "START_TIME":
-                        starttime = obspy.UTCDateTime(int(spl[2]),
-                                                      int(spl[3]),
-                                                      int(spl[4]),
-                                                      int(spl[5]),
-                                                      int(spl[6]),
-                                                      int(spl[7]))
-                        meta["starttime"] = spl[2]+"/"+spl[3]+"/"+spl[4]+" "+spl[5]+":"+spl[6]+":"+spl[7]
+ #                       print(spl[1])
+                        YYYY = int(spl[1][:4])
+                        MM = int(spl[1][4:6])
+                        DD = int(spl[1][6:8])
+                        hh = int(spl[1][8:10])
+                        mm = int(spl[1][10:12])
+                        ss = int(spl[1][12:14])
+  #                      print(YYYY, MM, DD)
+                        starttime = obspy.UTCDateTime(YYYY, MM, DD, hh, mm, ss)
+                        meta["starttime"] = (spl[1][:4]+"/"+spl[1][4:6]+"/"+spl[1][6:8]+" "
+                                             +spl[1][8:10]+":"+spl[1][10:12]+":"+spl[1][12:14])
                     elif spl[0] == "EVT_X":
-                        meta["evt_x"] = spl[2]
+                        meta["evt_x"] = float(spl[1])
                     elif spl[0] == "EVT_Y":
-                        meta["evt_y"] = spl[2]
+                        meta["evt_y"] = float(spl[1])
                     elif spl[0] == "EVT_Z":
-                        meta["evt_z"] = spl[2]
+                        meta["evt_z"] = float(spl[1])
                         
                                                       
 
